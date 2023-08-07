@@ -141,7 +141,6 @@ export default function Home() {
       <header className='p-4 flex justify-center'>
         <Logo width={300}/>
       </header>
-      {authState === AuthState.Authenticated && (
         <main className='flex justify-center flex-col p-4'>
           <section className='max-w-6xl m-auto w-full md:my-10 mb-20 flex flex-col-reverse md:flex-row flex-wrap gap-4'>
             <div className='flex-1'>
@@ -149,7 +148,7 @@ export default function Home() {
                 <div className='border-4 border-black h-[100px] md:h-[200px] border-dashed rounded-md flex items-center justify-center'>
                 Drop file or click here
                 </div>
-                <input ref={inputRef} className="hidden" type="file" id={inputId} onChange={onFileChange} multiple/>
+                {authState === AuthState.Authenticated && <input ref={inputRef} className="hidden" type="file" id={inputId} onChange={onFileChange} multiple/>}
               </label>
               {
                 files.slice().reverse().map(file => (
@@ -245,7 +244,7 @@ export default function Home() {
             <span className='absolute bottom-0 right-0 rounded-full bg-red-400 text-white w-6 h-6 flex justify-center items-center'>{filesDownloading.length}</span>
           </div>)}
         </main>
-      )}
+
     </>
   )
 }
