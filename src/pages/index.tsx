@@ -10,6 +10,7 @@ import useAuth from '@/hooks/useAuth'
 import { LOCAL_URL } from '@/utils/constants'
 import Image from 'next/image'
 import Link from 'next/link'
+import Head from 'next/head'
 
 export default function Home() {
   const { user, authState } = useAuth()
@@ -132,6 +133,11 @@ export default function Home() {
 
   return (
     <>
+      <Head>
+        <title>DROP | File Sharing</title>
+        <meta name="description" content="Drop is a file sharing app that allows you to share files with your friends in a peer-to-peer connection." />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
       <header className='p-4 flex justify-center'>
         <Logo width={300}/>
       </header>
