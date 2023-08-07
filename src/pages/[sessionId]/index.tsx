@@ -8,19 +8,22 @@ import { uniqueNamesGenerator, adjectives, colors, animals } from 'unique-names-
 import { AuthState } from '@/context/AuthContextProvider'
 import useAuth from '@/hooks/useAuth'
 import { LOCAL_URL } from '@/utils/constants'
+import { useRouter } from 'next/router'
 import Image from 'next/image'
-import Link from 'next/link'
 
 export default function Home() {
   const { user, authState } = useAuth()
-  const { createOffer, joinSession, sendMessage, connectionState, sendFile, filesReceived, chatMessages, sessionId, users } = useWebRTC(user)
+  const { joinSession, sendMessage, connectionState, sendFile, filesReceived, chatMessages, sessionId, users} = useWebRTC(user)
   const inputId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
   const [files, setFiles] = useState<DropFile[]>([])
   const [showModal, setShowModal] = useState<boolean>(false)
   const [showDownloadingModal, setShowDownloadingModal] = useState<boolean>(false)
+  const [loading, setLoading] = useState<boolean>(true)
+  const router = useRouter()
   const messageRef = useRef<HTMLTextAreaElement>(null)
   const messageContainerRef = useRef<HTMLDivElement>(null)
+
   const filesDownloading = filesReceived.filter((file) => !Boolean(file.data))
 
   const parseMessage = (message: string) => {
@@ -55,6 +58,17 @@ export default function Home() {
     }
   }
 
+  useEffect(() => {
+    if (router.isReady && authState === AuthState.Authenticated) {
+      if (router.query.sessionId) {
+        joinSession(router.query.sessionId as string).then(() => {
+          setLoading(false)
+        }).catch(console.error)
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, authState])
+
   const generateRandomName = () => {
     const randomName = uniqueNamesGenerator({ 
       dictionaries: [adjectives, animals, colors],
@@ -87,10 +101,6 @@ export default function Home() {
         }
         return parseFileList(e.dataTransfer.files)
       });
-      if(!sessionId && connectionState !== ConnectionState.CreatingOffer) {
-        await createOffer()
-        setShowModal(true)
-      }
     }
   };
 
@@ -107,15 +117,11 @@ export default function Home() {
         return parseFileList(e.target.files as FileList)
       });
     }
-    if(!sessionId && connectionState !== ConnectionState.CreatingOffer) {
-      await createOffer()
-      setShowModal(true)
-    }
   }
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(`${LOCAL_URL}/${sessionId}`)
-    setShowModal(false)
+    alert("Copied to clipboard")
   }
 
   const parseBytes = (bytes: number) => {
@@ -135,9 +141,17 @@ export default function Home() {
       <header className='p-4 flex justify-center'>
         <Logo width={300}/>
       </header>
-      {authState === AuthState.Authenticated && (
+      {
+        ((authState !== AuthState.Authenticated) && (connectionState !== ConnectionState.Connected)) && (
+          <div className='flex justify-center items-center h-[100px] flex-col'>
+            <div>Connecting Room</div>
+            <div className='spinner'></div>
+          </div>
+        )
+      }
+      {((authState === AuthState.Authenticated) && (connectionState === ConnectionState.Connected)) && (
         <main className='flex justify-center flex-col p-4'>
-          <section className='max-w-6xl m-auto w-full md:my-10 mb-20 flex flex-col-reverse md:flex-row flex-wrap gap-4'>
+          <section className='max-w-6xl m-auto w-full md:my-10 flex flex-col-reverse md:flex-row flex-wrap gap-4'>
             <div className='flex-1'>
               <label htmlFor={inputId} onDrop={handleDrop} onDragOver={handleDragOver} className='flex-1'>
                 <div className='border-4 border-black h-[100px] md:h-[200px] border-dashed rounded-md flex items-center justify-center'>
@@ -169,13 +183,13 @@ export default function Home() {
               }
             </div>
             {
-              sessionId && (
+              connectionState === ConnectionState.Connected && (
                 <aside className='w-full md:max-w-[300px]'>
                   <header className='font-bold'>
                     Friends
                   </header>
                   <main>
-                    <section className='pb-2 border-b h-[72px] overflow-y-auto'>
+                    <section className='pb-2 border-b  h-[72px] overflow-y-auto'>
                       <ul>
                         {
                           users.length === 0 && (
@@ -201,16 +215,16 @@ export default function Home() {
                         }
                       </div>
                       <textarea ref={messageRef} className='border-2 border-black rounded-sm' name="inputchat" id="inputchat" onKeyDown={handleSendMessageKeyPress}></textarea>
-                      <button className='w-full bg-black text-white rounded py-2' onClick={handleSendMessage}>SEND</button>
+                      <button className='w-full bg-black text-white rounded py-2'>SEND</button>
                     </section>
                   </main>
                 </aside>
               )
             }
             {
-              connectionState === ConnectionState.CreatingOffer && (
+              connectionState !== ConnectionState.Connected && (
                 <aside className='w-full md:max-w-[300px] flex justify-center items-center flex-col'>
-                  <p>Creating Room</p>
+                  <p>Connecting Room</p>
                   <div className='spinner'></div>
                 </aside>
               )
@@ -243,4 +257,3 @@ export default function Home() {
     </>
   )
 }
-
